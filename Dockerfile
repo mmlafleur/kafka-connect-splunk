@@ -48,6 +48,4 @@ ENV CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="3"
 
 RUN confluent-hub install --no-prompt splunk/kafka-connect-splunk:2.0
 
-ENTRYPOINT []
-
 EXPOSE 8083
