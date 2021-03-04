@@ -46,11 +46,8 @@ ENV CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR="3"
 ENV CONNECT_STATUS_STORAGE_TOPIC="netsuite2splunk-status"
 ENV CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="3"
 
-COPY docker/entrypoint.sh /entrypoint.sh
-RUN chmod +x entrypoint.sh
+COPY docker/init.sh /scripts/init.sh
 
 RUN confluent-hub install --no-prompt splunk/kafka-connect-splunk:2.0
 
 EXPOSE 8083
-
-ENTRYPOINT ["/entrypoint.sh"]
