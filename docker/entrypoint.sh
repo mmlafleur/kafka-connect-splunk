@@ -44,4 +44,4 @@ mv -f /docker/env.template /docker/env
 #export $(xargs <file)
 
 # Start the app
-/docker/init.sh
+bash /docker/init.sh
