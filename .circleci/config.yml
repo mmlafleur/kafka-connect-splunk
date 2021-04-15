@@ -21,6 +21,62 @@ parameters:
 
 
 jobs:
+  production_build:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-kafka-stack"
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - aws-ecr/build-image:
+          repo: "mmlafleur/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+          dockerfile: "Dockerfile"
+          #extra-build-args: '--target staging'
+      - aws-cli/install
+      - run:
+          name: "AWS ECR Login"
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $AWS_ECR_URL
+      - aws-ecr/push-image:
+          repo: "mmlafleeur/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+  production_deploy:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-kafka-stack"
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+          authenticator-release-tag: v0.5.1
+          cluster-name: << parameters.cluster-name >>
+          aws-region: "${AWS_REGION}"
+      - helm/install-helm-client:
+      - run:
+          name: "Helm chart install/upgrade"
+          shell: /bin/bash
+          command: |
+            #helm del --purge ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} || :
+            helm upgrade --debug --install ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} \
+                --namespace kafka \
+                --set branch="${CIRCLE_BRANCH,,}" \
+                --set app.environment="${CIRCLE_BRANCH,,}" \
+                --set image.tag="${CIRCLE_BRANCH,,}" \
+                --set image.repository="593202966396.dkr.ecr.us-east-1.amazonaws.com/mmlafleur/${CIRCLE_PROJECT_REPONAME}" \
+                -f ./deploy/production/values.yaml ./deploy/production --recreate-pods
+      - slack/notify:
+         event: fail
+         template: basic_fail_1
   stage_build:
     docker:
       - image: circleci/python:3.7.1
@@ -184,6 +240,24 @@ workflows:
          filters:
            branches:
              ignore:
+               - master
+               - main
+      - production_build:
+         context:
+          - slack-config
+         filters:
+           branches:
+             only:
+               - master
+               - main
+      - production_deploy:
+         context:
+          - slack-config
+         requires:
+           - production_build
+         filters:
+           branches:
+             only:
                - master
                - main
 
