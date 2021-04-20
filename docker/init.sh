@@ -4,20 +4,22 @@ echo "@@@ Initializing a data collection task with Splunk...\n Sleeping for 60 s
 
 sleep 60
 
+source /scripts/env
+
 ## External file example:
 curl -o response.log -X POST -H "Content-Type: application/json" http://localhost:8083/connectors \
   -d '{
-    "name": "kafka-connect-splunk",
+    "name": "${KAFKA_NAME}",
     "config": {
-      "connector.class": "com.splunk.kafka.connect.SplunkSinkConnector",
-      "tasks.max": "3",
-      "topics":"products,customers,orders",
-      "splunk.indexes": "sandbox_kafka",
-      "splunk.hec.uri": "https://http-inputs-mmlafleur.splunkcloud.com:443",
-      "splunk.hec.token": "6492f5aa-77ac-4b42-bb9e-380fcdd60b3d",
-      "splunk.hec.raw": "true",
-      "splunk.hec.total.channels": "1",
-      "splunk.hec.ack.enabled":"false",
-      "splunk.hec.ssl.validate.certs":"false"
+      "connector.class": "${CONNECTOR_CLASS}",
+      "tasks.max": "${TASKS_MAX}",
+      "topics":"${TOPICS}",
+      "splunk.indexes": "${SPLUNK_INDEXES}",
+      "splunk.hec.uri": "${SPLUNK_HEC_URI}",
+      "splunk.hec.token": "${SPLUNK_HEC_TOKEN}",
+      "splunk.hec.raw": "${SPLUNK_HEC_RAW}",
+      "splunk.hec.total.channels": "${SPLUNK_HEC_TOTAL_CHANNELS}",
+      "splunk.hec.ack.enabled":"${SPLUNK_HEC_ACK_ENABLED}",
+      "splunk.hec.ssl.validate.certs":"${SPLUNK_HEC_SSL_VALIDATE_CERTS}"
     }
 }'

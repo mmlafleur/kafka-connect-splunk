@@ -1,0 +1,263 @@
+orbs:
+  helm: circleci/helm@1.1.2
+  aws-cli: circleci/aws-cli@1.0.0
+  aws-ecr: circleci/aws-ecr@6.8.2
+  aws-eks: circleci/aws-eks@0.2.7
+  kubernetes: circleci/kubernetes@0.4.0
+  slack: circleci/slack@4.1.4
+
+version: 2.1
+
+parameters:
+  mmdb_var:
+    type: boolean
+    default: false
+  placebo_deploy:
+    type: boolean
+    default: false
+  placebo_branch:
+    type: string
+    default: "master"
+
+
+jobs:
+  production_build:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-kafka-stack"
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - aws-ecr/build-image:
+          repo: "mmlafleur/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+          dockerfile: "Dockerfile"
+          #extra-build-args: '--target staging'
+      - aws-cli/install
+      - run:
+          name: "AWS ECR Login"
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $AWS_ECR_URL
+      - aws-ecr/push-image:
+          repo: "mmlafleeur/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+  production_deploy:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-kafka-stack"
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+          authenticator-release-tag: v0.5.1
+          cluster-name: << parameters.cluster-name >>
+          aws-region: "${AWS_REGION}"
+      - helm/install-helm-client:
+      - run:
+          name: "Helm chart install/upgrade"
+          shell: /bin/bash
+          command: |
+            #helm del --purge ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} || :
+            helm upgrade --debug --install ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} \
+                --namespace kafka \
+                --set branch="${CIRCLE_BRANCH,,}" \
+                --set app.environment="${CIRCLE_BRANCH,,}" \
+                --set image.tag="${CIRCLE_BRANCH,,}" \
+                --set image.repository="593202966396.dkr.ecr.us-east-1.amazonaws.com/mmlafleur/${CIRCLE_PROJECT_REPONAME}" \
+                -f ./deploy/production/values.yaml ./deploy/production --recreate-pods
+      - slack/notify:
+         event: fail
+         template: basic_fail_1
+  stage_build:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-staging-eks"
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - run:
+          name: "Check if all repositories have the same branch or run placebo build"
+          command: |
+            for REPO in mmlafleur api react-pdp react-checkout kafka-connect-splunk mmconsumer-client netsuite-connector; do \
+                git ls-remote --exit-code --heads git@github.com:mmlafleur/${REPO}.git ${CIRCLE_BRANCH} || \
+                  curl -u ${CIRCLECI_API_KEY}: \
+                    -X POST --header "Content-Type: application/json" \
+                    -d "{ \"branch\":\"master\", \"parameters\": {\"placebo_deploy\":true, \"placebo_branch\":\"${CIRCLE_BRANCH,,}\"}}" \
+                    https://circleci.com/api/v2/project/github/mmlafleur/${REPO}/pipeline; \
+            done
+      - aws-ecr/build-image:
+          repo: "staging/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+          dockerfile: "Dockerfile"
+          #extra-build-args: '--target staging'
+      - aws-cli/install
+      - run:
+          name: "AWS ECR Login"
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $AWS_ECR_URL
+      - aws-ecr/push-image:
+          repo: "staging/${CIRCLE_PROJECT_REPONAME}"
+          tag: "${CIRCLE_BRANCH,,}"
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
+#  unit_tests:
+#    docker:
+#      - image: circleci/python:3.7.1
+#    steps:
+#      - run:
+#          name: "Unit tests"
+#          command: |
+#            ssh -oStrictHostKeyChecking=no circleci@54.145.19.253 "docker exec -t mysql mysql -uroot -psecret -e \"ALTER USER 'root'@'%' IDENTIFIED WITH mysql_native_password BY 'secret';\""
+#            ssh -oStrictHostKeyChecking=no circleci@54.145.19.253 "docker run --env="COMPOSER_AUTH=\"${PACKAGIST_AUTH_JSON}\"" --name ${CIRCLE_PROJECT_REPONAME} \"${AWS_ECR_URL}/staging/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH,,}\" tests 172.17.157.123"
+#      - run:
+#          name: "Remove images and containers"
+#          command: |
+#            ssh -oStrictHostKeyChecking=no circleci@54.145.19.253 "docker rm -f ${CIRCLE_PROJECT_REPONAME} && docker rmi \"${AWS_ECR_URL}/staging/${CIRCLE_PROJECT_REPONAME}:${CIRCLE_BRANCH,,}\""
+#      - slack/notify:
+#          event: fail
+#          template: basic_fail_1
+  stage_deploy:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-staging-eks"
+    steps:
+      - checkout
+      - aws-eks/update-kubeconfig-with-authenticator:
+          authenticator-release-tag: v0.5.1
+          cluster-name: << parameters.cluster-name >>
+          aws-region: "${AWS_REGION}"
+      #- helm/install-helm-client:
+      - run:
+          name: "Install helm client"
+          shell: /bin/bash
+          command: |
+            curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash -s -- -v v2.16.5
+            helm init --stable-repo-url=https://charts.helm.sh/stable --client-only
+      - run:
+          name: "Helm chart install/upgrade"
+          shell: /bin/bash
+          command: |
+            helm del --purge ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} || :
+            helm upgrade --debug --install ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} \
+                --namespace staging \
+                --set branch="${CIRCLE_BRANCH,,}" \
+                --set app.environment="${CIRCLE_BRANCH,,}" \
+                --set image.tag="${CIRCLE_BRANCH,,}" \
+                --set image.repository="593202966396.dkr.ecr.us-east-1.amazonaws.com/staging/${CIRCLE_PROJECT_REPONAME}" \
+                -f ./deploy/${CIRCLE_PROJECT_REPONAME}/values.yaml ./deploy/${CIRCLE_PROJECT_REPONAME} --recreate-pods
+      - slack/notify:
+         event: fail
+         template: basic_fail_1
+  placebo_deployment:
+    docker:
+      - image: circleci/python:3.7.1
+    parameters:
+      cluster-name:
+        type: string
+        default: "mmlf-staging-eks"
+    steps:
+      - setup_remote_docker:
+          docker_layer_caching: true
+      - checkout
+      - aws-ecr/build-image:
+          repo: "staging/${CIRCLE_PROJECT_REPONAME}"
+          tag: "<< pipeline.parameters.placebo_branch >>"
+          dockerfile: "Dockerfile"
+          #gextra-build-args: '--target staging'
+          #extra-build-args: '--build-arg ENV=staging'
+      - aws-cli/install
+      - run:
+          name: "AWS ECR Login"
+          command: |
+            aws ecr get-login-password --region $AWS_REGION | docker login -u AWS --password-stdin $AWS_ECR_URL
+      - aws-ecr/push-image:
+          repo: "staging/${CIRCLE_PROJECT_REPONAME}"
+          tag: "<< pipeline.parameters.placebo_branch >>"
+      - aws-eks/update-kubeconfig-with-authenticator:
+          authenticator-release-tag: v0.5.1
+          cluster-name: << parameters.cluster-name >>
+          aws-region: "${AWS_REGION}"
+      - run:
+          name: "Install helm client"
+          shell: /bin/bash
+          command: |
+            curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get | bash -s -- -v v2.16.5
+            helm init --stable-repo-url=https://charts.helm.sh/stable --client-only
+      - run:
+          name: "Helm chart install/upgrade"
+          shell: /bin/bash
+          command: |
+            helm del --purge << pipeline.parameters.placebo_branch >>-${CIRCLE_PROJECT_REPONAME} || :
+            helm upgrade --debug --install << pipeline.parameters.placebo_branch >>-${CIRCLE_PROJECT_REPONAME} \
+                --namespace staging \
+                --set branch="<< pipeline.parameters.placebo_branch >>" \
+                --set image.tag="<< pipeline.parameters.placebo_branch >>" \
+                --set image.repository="593202966396.dkr.ecr.us-east-1.amazonaws.com/staging/${CIRCLE_PROJECT_REPONAME}" \
+                -f ./deploy/${CIRCLE_PROJECT_REPONAME}/values.yaml ./deploy/${CIRCLE_PROJECT_REPONAME} --recreate-pods
+ 
+
+workflows:
+  version: 2
+  placebo_build:
+    when: << pipeline.parameters.placebo_deploy >>
+    jobs:
+      - placebo_deployment:
+        parameters:
+          placebo_branch: << pipeline.parameters.placebo_branch >>
+  circle_build:
+    unless: << pipeline.parameters.placebo_deploy >>
+    jobs:
+      - stage_build:
+         context:
+          - slack-config
+         filters:
+           branches:
+             ignore:
+               - master
+               - main
+      - stage_deploy:
+         context:
+          - slack-config
+         requires:
+           - stage_build
+         filters:
+           branches:
+             ignore:
+               - master
+               - main
+      - production_build:
+         context:
+          - slack-config
+         filters:
+           branches:
+             only:
+               - master
+               - main
+      - production_deploy:
+         context:
+          - slack-config
+         requires:
+           - production_build
+         filters:
+           branches:
+             only:
+               - master
+               - main
+

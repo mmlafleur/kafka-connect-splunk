@@ -1,53 +1,14 @@
 FROM confluentinc/cp-kafka-connect-base:6.1.0-1-ubi8
 
-ENV CONNECT_PLUGIN_PATH="/usr/share/java,/usr/share/confluent-hub-components"
-ENV CONNECT_REST_PORT=8083
-ENV CONNECT_INTERNAL_KEY_CONVERTER="org.apache.kafka.connect.json.JsonConverter"
-ENV CONNECT_INTERNAL_VALUE_CONVERTER="org.apache.kafka.connect.json.JsonConverter"
-ENV CONNECT_REST_ADVERTISED_HOST_NAME="localhost"
-ENV CONNECT_CONSUMER_AUTO_OFFSET_RESET="latest"
+COPY docker/init.sh /docker/init.sh
+COPY docker/env.template /docker/env.template
+COPY docker/entrypoint.sh /entrypoint.sh
+COPY docker/aws/credentials /home/appuser/.aws/
 
-ENV CONNECT_BOOTSTRAP_SERVERS='pkc-4nym6.us-east-1.aws.confluent.cloud:9092'
-ENV CONNECT_KEY_CONVERTER="org.apache.kafka.connect.storage.StringConverter"
-ENV CONNECT_VALUE_CONVERTER="org.apache.kafka.connect.json.JsonConverter"
-ENV CONNECT_VALUE_CONVERTER_SCHEMAS_ENABLE="false"
-
-ENV CONNECT_SSL_ENDPOINT_IDENTIFICATION_ALGORITHM='https'
-ENV CONNECT_SECURITY_PROTOCOL='SASL_SSL'
-ENV CONNECT_SASL_MECHANISM='PLAIN'
-ENV CONNECT_SASL_JAAS_CONFIG='org.apache.kafka.common.security.plain.PlainLoginModule required username="UIQUWCE2PU3PFQOA" password="cRTMzcUoMFmvmZ9CEvcVjfuyZ2zVhS3a0djRMMK6D9u14dQkYCCEB7iCNE46jfzm";'
-ENV CONNECT_REQUEST_TIMEOUT_MS="20000"
-ENV CONNECT_RETRY_BACKOFF_MS="500"
-
-ENV CONNECT_PRODUCET_BOOTSTRAP_SERVERS="pkc-4nym6.us-east-1.aws.confluent.cloud:9092"
-ENV CONNECT_PRODUCER_SSL_ENDPOINT_IDENTIFICATION_ALGORITH="https"
-ENV CONNECT_PRODUCER_SECURITY_PROTOCOL="SASL_SSL"
-ENV CONNECT_PRODUCER_SASL_MECHANISM="PLAIN"
-ENV CONNECT_PRODUCER_SASL_JAAS_CONFIG='org.apache.kafka.common.security.plain.PlainLoginModule required username="UIQUWCE2PU3PFQOA" password="cRTMzcUoMFmvmZ9CEvcVjfuyZ2zVhS3a0djRMMK6D9u14dQkYCCEB7iCNE46jfzm";'
-ENV CONNECT_PRODUCER_REQUEST_TIMEOUT_MS="20000"
-ENV CONNECT_PRODUCER_RETRY_BACKOFF_MS="500"
-
-ENV CONNECT_CONSUMER_BOOTSTRAP_SERVERS="pkc-4nym6.us-east-1.aws.confluent.cloud:9092"
-ENV CONNECT_CONSUMER_SSL_ENDPOINT_IDENTIFICATION_ALGORITH="https"
-ENV CONNECT_CONSUMER_SECURITY_PROTOCOL="SASL_SSL"
-ENV CONNECT_CONSUMER_SASL_MECHANISM="PLAIN"
-ENV CONNECT_CONSUMER_SASL_JAAS_CONFIG='org.apache.kafka.common.security.plain.PlainLoginModule required username="UIQUWCE2PU3PFQOA" password="cRTMzcUoMFmvmZ9CEvcVjfuyZ2zVhS3a0djRMMK6D9u14dQkYCCEB7iCNE46jfzm";'
-ENV CONNECT_CONSUMER_REQUEST_TIMEOUT_MS="20000"
-ENV CONNECT_CONSUMER_RETRY_BACKOFF_MS="500"
-
-ENV CONNECT_OFFSET_FLUSH_INTERVAL_MS="10000"
-ENV CONNECT_OFFSET_STORAGE_FILE_FILENAME="/tmp/connect.offsets"
-ENV CONNECT_GROUP_ID="netsuite2splunk-cluster"
-ENV CONNECT_OFFSET_STORAGE_TOPIC="netsuite2splunk-offsets"
-ENV CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR="3"
-ENV CONNECT_OFFSET_STORAGE_PARTITIONS="3"
-ENV CONNECT_CONFIG_STORAGE_TOPIC="netsuite2splunk-configs"
-ENV CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR="3"
-ENV CONNECT_STATUS_STORAGE_TOPIC="netsuite2splunk-status"
-ENV CONNECT_STATUS_STORAGE_REPLICATION_FACTOR="3"
-
-COPY docker/init.sh /scripts/init.sh
-
+#RUN chmod +x /entrypoint.sh /docker/init.sh && \
 RUN confluent-hub install --no-prompt splunk/kafka-connect-splunk:2.0
 
 EXPOSE 8083
+
+ENTRYPOINT ["bash", "/entrypoint.sh"]
+#CMD /scripts/init.sh
