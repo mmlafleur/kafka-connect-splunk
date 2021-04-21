@@ -68,7 +68,7 @@ jobs:
           shell: /bin/bash
           command: |
             #helm del --purge ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} || :
-            helm upgrade --debug --install ${CIRCLE_BRANCH,,}-${CIRCLE_PROJECT_REPONAME} \
+            helm upgrade --debug --install ${CIRCLE_PROJECT_REPONAME} \
                 --namespace kafka \
                 --set branch="${CIRCLE_BRANCH,,}" \
                 --set app.environment="${CIRCLE_BRANCH,,}" \
