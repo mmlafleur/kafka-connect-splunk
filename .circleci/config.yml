@@ -62,6 +62,7 @@ jobs:
           cluster-name: << parameters.cluster-name >>
           aws-region: "${AWS_REGION}"
       - helm/install-helm-client:
+          version: "v3.5.4"
       - run:
           name: "Helm chart install/upgrade"
           shell: /bin/bash
