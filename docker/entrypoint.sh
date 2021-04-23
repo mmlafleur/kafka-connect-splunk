@@ -10,7 +10,7 @@ fi
 case $ENVIRONMENT in
     test|tests) ENV=tests;;
 	localdev|dev|development) ENV=dev;;
-	master|production|prod|parent) ENV=production;;
+	main|master|production|prod|parent) ENV=production;;
 	*) ENV=staging;;
 esac
 
