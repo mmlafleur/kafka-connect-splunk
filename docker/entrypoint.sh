@@ -40,7 +40,7 @@ done
 rm $TMPFL
 
 # Replace configs with the generated files
-mv -f /docker/env.template /docker/env
+mv -f /docker/env.template /home/appuser/.env
 #export $(xargs <file)
 
 # Start the app
