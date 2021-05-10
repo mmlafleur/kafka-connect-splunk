@@ -19,7 +19,8 @@ echo -e "Env: $ENV"
 # Production role change
 if [ "$ENV" == "production" ]; then
     echo "Replace AWS Credentials role with production one..."
-    sed -i 's#arn:aws:iam::593202966396:role/mmlf-staging-eks-eks-node-role#arn:aws:iam::593202966396:role/production-eks-NodeInstanceRole-PF0E41JLO9OV#' /home/appuser/.aws/credentials
+    #sed -i 's#arn:aws:iam::593202966396:role/mmlf-staging-eks-eks-node-role#arn:aws:iam::593202966396:role/production-eks-NodeInstanceRole-PF0E41JLO9OV#' /home/appuser/.aws/credentials
+    sed -i 's#arn:aws:iam::593202966396:role/mmlf-staging-eks-eks-node-role#arn:aws:iam::593202966396:role/mmlf-kafka-stack-eks-node-role#' /home/appuser/.aws/credentials
 fi
 
 echo -e "Fetching parameters from AWS SSM Parameter Store for Environment: [$ENV]..."
