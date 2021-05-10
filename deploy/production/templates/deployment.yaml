@@ -41,6 +41,8 @@ spec:
           livenessProbe:
             exec:
               command:
+                - /bin/sh
+                - -c
                 - cat /tmp/healthy
             initialDelaySeconds: 30
           env:
