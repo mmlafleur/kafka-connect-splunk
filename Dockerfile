@@ -10,7 +10,8 @@ RUN yum -y install unzip && cd / && unzip /awscliv2.zip && ./aws/install
 RUN touch /home/appuser/.env && \
     chown -R appuser /home/appuser/.aws && \
     mkdir -p /scripts && \
-    ln -s /home/appuser/.env /scripts/env 
+    ln -s /home/appuser/.env /scripts/env && \
+    ln -s /usr/bin/more /usr/bin/less
 
 USER appuser
 #RUN chmod +x /entrypoint.sh /docker/init.sh && \
