@@ -39,13 +39,10 @@ spec:
               containerPort: 8082
               protocol: TCP
           livenessProbe:
+            exec:
+              command:
+                - cat /tmp/healthy
             initialDelaySeconds: 30
-            tcpSocket:
-              port: http
-          readinessProbe:
-            initialDelaySeconds: 30
-            tcpSocket:
-              port: http
           env:
             - name: ENVIRONMENT
               value: {{ .Values.app.environment }}

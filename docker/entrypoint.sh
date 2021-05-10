@@ -44,5 +44,8 @@ rm $TMPFL
 cp -f /docker/env.template /home/appuser/.env
 #export $(xargs <file)
 
+# Liveliness probe
+touch /tmp/healthy
+
 # Start the app
 bash /docker/init.sh
