@@ -24,18 +24,26 @@ if [ "$ENV" == "production" ]; then
 fi
 
 echo -e "Fetching parameters from AWS SSM Parameter Store for Environment: [$ENV]..."
-aws ssm get-parameters-by-path --output text --with-decryption --recursive --path /${ENV}/app/global | sed "s#/app/global##g" | awk '{print $4,$6}' > $TMPFL
-aws ssm get-parameters-by-path --output text --with-decryption --recursive --path /${ENV}/app/${APP_NAME} | sed "s#/app/${APP_NAME}##g" | awk '{print $4,$6}' >> $TMPFL
+aws ssm get-parameters-by-path --output text --with-decryption --recursive --path /${ENV}/app/global | sed "s#/app/global##g" | awk '{print $5,$7}' > $TMPFL
+aws ssm get-parameters-by-path --output text --with-decryption --recursive --path /${ENV}/app/${APP_NAME} | sed "s#/app/${APP_NAME}##g" | awk '{print $5,$7}' >> $TMPFL
 
-for TEMPLATE in $(ls docker/*.template); do
+for TEMPLATE in $(ls /docker/*.template); do
     FILE="$(echo $TEMPLATE | sed "s#.template##g")"
     cp -f $TEMPLATE $FILE
     echo "Generating $FILE"
     while read line; do
         larray=( $line )
-        PARAM="$(echo ${larray[0]^^} | tr "/" "_" | sed "s#_${ENV^^}_##g" )"
-        sed -i "s#{{${PARAM}}}#${larray[1]}#g" $FILE 2>/dev/null || sed -i "s|{{${PARAM}}}|${larray[1]}|g" $FILE
+        if [[  ${larray[1]} == *"#"*  ]]; then
+	        PARAM="$(echo ${larray[0]^^} | tr "/" "_" | sed "s#_${ENV^^}_##g" )"
+	        sed -i "s%{{${PARAM}}}%${larray[1]}%g" $FILE 2>/dev/null || sed -i "s|{{${PARAM}}}|${larray[1]}|g" $FILE
+	    else
+	        PARAM="$(echo ${larray[0]^^} | tr "/" "_" | sed "s#_${ENV^^}_##g" )"
+	        sed -i "s#{{${PARAM}}}#${larray[1]}#g" $FILE 2>/dev/null || sed -i "s|{{${PARAM}}}|${larray[1]}|g" $FILE
+	    fi
     done < $TMPFL
+
+    # Print all genereted files if env is not production
+    [ "$ENV" != "production" ] && cat $FILE
 done
 
 rm $TMPFL
