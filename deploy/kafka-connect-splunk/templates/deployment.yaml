@@ -36,7 +36,7 @@ spec:
           args: [ "{{ .Values.image.tag }}" ]
           ports:
             - name: http
-              containerPort: 8082
+              containerPort: 8083
               protocol: TCP
           livenessProbe:
             initialDelaySeconds: 30
