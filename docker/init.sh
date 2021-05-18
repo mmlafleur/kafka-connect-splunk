@@ -35,7 +35,8 @@ curl -o response.log -X POST -H "Content-Type: application/json" http://localhos
       "splunk.hec.raw":"$SPLUNK_HEC_RAW",
       "splunk.hec.total.channels":"$SPLUNK_HEC_TOTAL_CHANNELS",
       "splunk.hec.ack.enabled":"$SPLUNK_HEC_ACK_ENABLED",
-      "splunk.hec.ssl.validate.certs":"$SPLUNK_HEC_SSL_VALIDATE_CERTS"
+      "splunk.hec.ssl.validate.certs":"$SPLUNK_HEC_SSL_VALIDATE_CERTS",
+      "splunk.truncate":500000
     }
   }
 EOF
