@@ -24,7 +24,7 @@ sleep 60
 ## External file example:
 curl -o response.log -X POST -H "Content-Type: application/json" http://localhost:8083/connectors -d @- <<EOF
   {
-    "name":"$HOSTNAME",
+    "name":"$KAFKA_NAME",
     "config": {
       "connector.class":"$CONNECTOR_CLASS",
       "tasks.max":"$TASKS_MAX",
