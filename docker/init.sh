@@ -40,4 +40,12 @@ curl -o response.log -X POST -H "Content-Type: application/json" http://localhos
   }
 EOF
 
+while true; do
+  sleep 60
+  if ! pgrep java ; then
+    echo "Java missing. Exiting..."
+    break
+  fi
+done
+
 sleep infinity

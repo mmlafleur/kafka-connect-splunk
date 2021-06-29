@@ -1,6 +1,6 @@
 app:
   environment: staging
-replicaCount: 1
+replicaCount: 2
 image:
   repository: 593202966396.dkr.ecr.us-east-1.amazonaws.com/mmlafleur/kafka-connect-splunk
   tag: master
