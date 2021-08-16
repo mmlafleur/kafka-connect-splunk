@@ -1,10 +1,10 @@
 orbs:
   helm: circleci/helm@1.1.2
-  aws-cli: circleci/aws-cli@1.0.0
-  aws-ecr: circleci/aws-ecr@6.8.2
-  aws-eks: circleci/aws-eks@0.2.7
+  slack: circleci/slack@4.4.2
+  aws-cli: circleci/aws-cli@2.0.2
+  aws-eks: circleci/aws-eks@1.1.0
+  aws-ecr: circleci/aws-ecr@7.0.0
   kubernetes: circleci/kubernetes@0.4.0
-  slack: circleci/slack@4.1.4
 
 version: 2.1
 
