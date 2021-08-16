@@ -1,8 +1,8 @@
 app:
-  environment: production
+  environment: staging
 replicaCount: 2
 image:
-  repository: 154821788882.dkr.ecr.us-east-1.amazonaws.com/kafka-connect-splunk
+  repository: 154821788882.dkr.ecr.us-east-1.amazonaws.com/staging/kafka-connect-splunk
   tag: master
   pullPolicy: Always
 branch: ""
