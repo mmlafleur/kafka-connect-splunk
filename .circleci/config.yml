@@ -94,7 +94,7 @@ jobs:
             done
       - aws-ecr/build-image:
           repo: "staging/${CIRCLE_PROJECT_REPONAME}"
-          tag: "${CIRCLE_BRANCH,,}"
+          tag: "${CIRCLE_BRANCH,,}-${CIRCLE_SHA1}"
           dockerfile: "Dockerfile"
           #extra-build-args: '--target staging'
       - aws-cli/install
