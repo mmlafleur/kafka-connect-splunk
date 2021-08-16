@@ -14,13 +14,12 @@ case $ENVIRONMENT in
 	*) ENV=staging;;
 esac
 
-echo -e "Env: $ENV"
+echo "ENVIRONMENT: $ENVIRONMENT"
 
 # Production role change
 if [ "$ENV" == "production" ]; then
-    echo "Replace AWS Credentials role with production one..."
-    #sed -i 's#arn:aws:iam::593202966396:role/mmlf-staging-eks-eks-node-role#arn:aws:iam::593202966396:role/production-eks-NodeInstanceRole-PF0E41JLO9OV#' /home/appuser/.aws/credentials
-    sed -i 's#arn:aws:iam::593202966396:role/mmlf-staging-eks-eks-node-role#arn:aws:iam::593202966396:role/mmlf-kafka-stack-eks-node-role#' /home/appuser/.aws/credentials
+    echo "Replacing AWS Credentials role with the production one..."
+    sed -i 's#arn:aws:iam::154821788882:role/EC2-ParamStore#arn:aws:iam::154821788882:role/mmlf-production20210712104121157000000009#' /srv/.aws/credentials
 fi
 
 echo -e "Fetching parameters from AWS SSM Parameter Store for Environment: [$ENV]..."
