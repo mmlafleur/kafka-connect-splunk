@@ -85,7 +85,7 @@ jobs:
       - run:
           name: "Check if all repositories have the same branch or run placebo build"
           command: |
-            for REPO in shop-wordpress react-pdp react-checkout kafka-connect-splunk mmconsumer-client netsuite-connector; do \
+            for REPO in shop-wordpress mmconsumer-client; do \
                 git ls-remote --exit-code --heads git@github.com:mmlafleur/${REPO}.git ${CIRCLE_BRANCH} || \
                   curl -u ${CIRCLECI_API_KEY}: \
                     -X POST --header "Content-Type: application/json" \
